@@ -119,6 +119,136 @@ Destination: 172.3.0.0/16 → Target: CGW
 ```
 
 ---
+---
+## 🔍VPN Tunnel Status Verification (Steps to perform inside the On-Prem instance)
+
+Check the configuration file/credentials that you downloaded from the Site-to-Site VPN setup.
+follow those steps 
+
+### 1. Check VPN Status (AWS Console)
+
+Navigate to:
+
+**VPC → Site-to-Site VPN Connections → Select your VPN**
+
+Check the tunnel status:
+
+* **Tunnel State: UP** ✅ → VPN is active and working
+* **Tunnel State: DOWN** ❌ → VPN is not established
+
+---
+
+### 2. Verify from EC2 Instance (On-Prem Side)
+
+SSH into your on-prem EC2 instance:
+
+```bash
+ssh -i key.pem ubuntu@<public-ip>
+```
+
+---
+
+### 3. Test Connectivity (Ping Test)
+
+```bash
+ping 172.3.0.138
+```
+
+**Result:**
+
+* Successful reply → ✅ VPN is UP
+* No response → ❌ VPN issue or misconfiguration
+
+---
+
+### 4. Trace Network Path
+
+```bash
+traceroute 172.3.0.138
+```
+
+**Result:**
+
+* Path visible → ✅ Tunnel working
+* Request timeout → ❌ Tunnel issue
+
+---
+
+### 5. Check Routing Configuration
+
+```bash
+ip route
+```
+
+Ensure route exists:
+
+```
+172.3.0.0/16 via <gateway>
+```
+
+---
+
+### 6. Verify VPN Ports (Advanced)
+
+```bash
+sudo netstat -an | grep 500
+sudo netstat -an | grep 4500
+```
+
+Required ports:
+
+* UDP 500 (ISAKMP)
+* UDP 4500 (NAT-T)
+
+---
+
+### 7. AWS CLI Verification
+
+```bash
+aws ec2 describe-vpn-connections \
+--vpn-connection-ids <vpn-id> \
+--query 'VpnConnections[].VgwTelemetry[].Status'
+```
+
+Expected output:
+
+```
+"UP"
+```
+
+---
+
+### 8. CloudWatch Monitoring
+
+Go to:
+
+**CloudWatch → Metrics → VPN**
+
+* `TunnelState = 1` → ✅ UP
+* `TunnelState = 0` → ❌ DOWN
+
+---
+
+## 🚨 Common Issues
+
+* Missing route in route table
+* Security group blocking ICMP or UDP ports
+* Incorrect Customer Gateway public IP
+* IPSec configuration mismatch
+
+---
+
+## 💡 Quick Summary
+
+To confirm VPN health:
+
+* Check tunnel status in AWS Console
+* Ping remote instance from EC2
+* Validate routing tables
+* Verify security groups and ports
+* Use AWS CLI or CloudWatch for monitoring
+
+---
 
 ### Step 7: Configure Security Groups
 
